@@ -69,7 +69,7 @@ std::vector<std::vector<double>> M_GetZAxisRotationMatrix(T_Transform transform)
 }
 
 std::vector<std::vector<double>> M_GetClippingMatrix(double w){ 
-  std::cout<<"BlajSS"<<std::endl<<std::endl;
+  //std::cout<<"BlajSS"<<std::endl<<std::endl;
   double normalizedW = 1/w;
   std::cout<<std::endl;
   std::vector<std::vector<double>> translationMatrix = {

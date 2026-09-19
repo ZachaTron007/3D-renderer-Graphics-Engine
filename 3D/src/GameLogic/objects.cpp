@@ -46,7 +46,7 @@ C_Camera* camera;
 
 void O_GenerateObjects(){
     camera  = new C_Camera(
-      -100.0,//x
+      0.0,//x
       0.0,//y
       0.0,//z
       0.0,//width
@@ -57,9 +57,9 @@ void O_GenerateObjects(){
       0.0//zAngle
     );
     cube = new S_Shape(
-      200,//x
+      0,//x
       0,//y
-      -500,//z
+      500,//z
       100,//width
       50,//height
       50,//depth
@@ -69,33 +69,80 @@ void O_GenerateObjects(){
       cubePoints,//points
       cubeFaces//faces
     );
-    cube->SetX(125);
+    //cube->SetX(125);
     delete cube;
+    S_Shape* floor = new S_Shape(
+      0,//x
+      50,//y
+      0,//z
+      300,//width
+      10,//height
+      300,//depth
+      0,//xAngle
+      0,//M_PI/4,//yAngle
+      0,//zAngle
+      cubePoints,//points
+      cubeFaces//faces
+    );
+    //cube->SetX(125);
+    delete floor;
 }
 
-float moveSpeed = 100;
-float rotateSpeed = 0.5;
+float moveSpeed = 200;
+float rotateSpeed = 1;
+
+bool ObjectCollision(std::vector<S_Shape> shapeList, std::vector<double> point){
+  double buffer = 5;
+  for(short unsigned int i = 0; i < shapeList.size(); i++){ 
+      //std::cout<<"Cam x: "<<camera->GetZ()<<", shape x: "<<shapes->at(i).GetZ()<<"\n";
+      double x = abs(shapeList.at(i).GetX()) - abs(point[0]);
+      double y = abs(shapeList.at(i).GetY()) - abs(point[1]);
+      double z = abs(shapeList.at(i).GetZ()) - abs(point[2]);
+      if(abs(x) < (shapeList.at(i).GetWidth() + buffer) && abs(y) < (shapeList.at(i).GetHeight() + buffer) && abs(z) < (shapeList.at(i).GetDepth() + buffer)){
+        return true;
+      }
+    }
+    return false;
+}
+
+
+
+
+
 
 void O_MoveSideways(int dir){
   //camera->SetY(camera->GetY() + G_GetDeltaTime() * dir * moveSpeed * sin(camera->GetXAngle() - M_PI/2));
-  camera->SetX(camera->GetX() + G_GetDeltaTime() * dir * moveSpeed * -sin(camera->GetYAngle() - M_PI/2));
-  camera->SetZ(camera->GetZ() + G_GetDeltaTime() * dir * moveSpeed * cos(camera->GetYAngle() - M_PI/2));
+  std::vector<double> point = 
+  {
+      (camera->GetX() - G_GetDeltaTime() * dir * moveSpeed * -sin(camera->GetYAngle() - M_PI/2)),
+      (camera->GetY()),
+      (camera->GetZ() - G_GetDeltaTime() * dir * moveSpeed * cos(camera->GetYAngle() - M_PI/2))
+  };
+  if(!ObjectCollision(*S_GetShapes(), point)) camera->SetPoint(point);
 }
 
 void O_MoveUp(int dir){
-  camera->SetY(camera->GetY() + G_GetDeltaTime() * dir * moveSpeed * sin(camera->GetXAngle() + M_PI/2));
-  //camera->SetX(camera->GetX() + G_GetDeltaTime() * dir * moveSpeed * -sin(camera->GetYAngle() - M_PI/2));
-  camera->SetZ(camera->GetZ() + G_GetDeltaTime() * dir * moveSpeed * cos(camera->GetYAngle() + M_PI/2));
+  std::vector<double> point = 
+  {
+    camera->GetX(),// + G_GetDeltaTime() * dir * moveSpeed * -sin(camera->GetYAngle() - M_PI/2),
+    camera->GetY() - G_GetDeltaTime() * dir * moveSpeed * sin(camera->GetXAngle() + M_PI/2),
+    camera->GetZ() - G_GetDeltaTime() * dir * moveSpeed * cos(camera->GetYAngle() + M_PI/2)
+  };
+  if(!ObjectCollision(*S_GetShapes(), point)) camera->SetPoint(point);
 }
 
 void O_MoveForward(int dir){
-  camera->SetY(camera->GetY() + G_GetDeltaTime() * dir * moveSpeed * sin(camera->GetXAngle()));
-  camera->SetX(camera->GetX() + G_GetDeltaTime() * dir * moveSpeed * -sin(camera->GetYAngle()));
-  camera->SetZ(camera->GetZ() + G_GetDeltaTime() * dir * moveSpeed * cos(camera->GetYAngle()));
+  std::vector<double> point = 
+  {
+      camera->GetX() - G_GetDeltaTime() * dir * moveSpeed * -sin(camera->GetYAngle()),
+      camera->GetY() - G_GetDeltaTime() * dir * moveSpeed * sin(camera->GetXAngle()),
+      camera->GetZ() - G_GetDeltaTime() * dir * moveSpeed * cos(camera->GetYAngle())
+  };
+  if(!ObjectCollision(*S_GetShapes(), point)) camera->SetPoint(point);
 }
 
 void O_MoveXAngle(int dir){
-  camera->SetXAngle(camera->GetXAngle() + G_GetDeltaTime() * dir * rotateSpeed);
+  camera->SetXAngle(camera->GetXAngle() - G_GetDeltaTime() * dir * rotateSpeed);
   //S_GetShapes()->at(0).SetXAngle(S_GetShapes()->at(0).GetXAngle() + G_GetDeltaTime() * dir * rotateSpeed);
 }
 

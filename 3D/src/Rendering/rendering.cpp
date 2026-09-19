@@ -18,14 +18,13 @@ void R_SetRenderCamera(C_Camera* camera){ currentCamera = camera; }
 const int screenWidth = 1280;
 const int screenHeight = 720;
 
-void ConvertToScreenSpace(double *x, double *y){
-    *x *= screenWidth;
-    *y *= screenHeight;
-}
-void ConvertToScreenSpaceAdd(double *x, double *y){
-    *x += screenWidth;
-    *y += screenHeight;
-}
+//1080p
+//const int screenWidth = 1920;
+//const int screenHeight = 1080;
+
+//1440p
+//const int screenWidth = 2560;
+//const int screenHeight = 1440;
 
 void DrawLine(float x0, float y0, float x1, float y1){
     float dx = x1 - x0;
@@ -43,50 +42,91 @@ void DrawLine(float x0, float y0, float x1, float y1){
     }
     
 }
+std::vector<std::vector<double>> ClipPoints(std::vector<double> point1, std::vector<double> point2){
+    
+    std::vector<double> newPoint1 = point1;
+    std::vector<double> newPoint2 = point2;
+    //if undershoot
+    float slope = (point2[1] - point1[1])/(point2[0] - point1[0]);
+    float b1 = point1[1] - slope * point1[0];
+    float b2 = point1[1] - slope * point1[0];
+    //undershoot X
+    //if(abs(slope) < 999999990){
+        if(point1[0] < 0){
+            //std::cout<<"slope: "<<slope<<", b: "<<b<<"\n";
+                //std::cout<<point1[0]
+            newPoint1[1] = b2;
+         }
+        if(point2[0] < 0){
+            //std::cout<<"slope: "<<slope<<", b: "<<b<<"\n";
+                //std::cout<<point1[0]
+            newPoint2[1] = b1;
+        }
+    //}
+        //overshoot X
+    if(point1[0] > screenWidth){
+        newPoint1[1] = slope * screenWidth + b2;
+    }
+    if(point2[0] > screenWidth){
+        newPoint2[1] = slope * screenWidth + b1;
+    }
+    //if(abs(slope) > 0){
+        if(point1[1] < 0){
+            newPoint1[0] = -b2/slope;
+        }
+        if(point2[1] < 0){
+            newPoint2[0] = -b1/slope;
+        }
+    //}
+    if(point1[1] > screenHeight){
+        newPoint1[0] = (screenHeight - b2)/slope;
+    }
+    if(point2[1] > screenHeight){
+        newPoint2[0] = (screenHeight - b1)/slope;
+    }
+        
+        return {newPoint1, newPoint2};
+
+}
+
 void FillShape(std::vector<double> face, std::vector<std::vector<double>> points){
     for(unsigned int i = 0; i < face.size(); i++){
         
-        std::vector<double> point0 = points[face[i]];
-        std::vector<double> point1 = points[face[(i+1)%face.size()]];
+        std::vector<std::vector<double>> pair = {points[face[i]], points[face[(i+1)%face.size()]]};
+        pair = ClipPoints(pair[0], pair[1]);
         //std::cout<< "Point 1: "<< face[i] << ", Point 2: "<< face[(i+1)%face.size()] <<std::endl;
-        float dx = point1[0] - point0[0];
-        float dy = point1[1] - point0[1];
+        double x0 = pair[0][0];
+        double x1 = pair[1][0];
+        double y0 = pair[0][1];
+        double y1 = pair[1][1];
+        
+        float dx = x1 - x0; 
+        float dy = y1 - y0;
+        //Go Across the Outer edge
         float step = (abs(dx) > abs(dy))? abs(dx) : abs(dy);
         if(step !=0){
             float stepX = dx/step;
 
             float stepY = dy/step;
             for(int i = 0; i < step + 1; i++){
-                int x = int(point0[0] + i *stepX + 0.5);
-                int y = int(point0[1]+ i *stepY + 0.5);
+                    //get point on outter edge
+                int x = int(x0 + i *stepX + 0.5);
+                int y = int(y0+ i *stepY + 0.5);
+                //if(point1[2] > 0 && point2[2] > 0)
                 SDL_RenderDrawPointF(renderer, x, y);
+                //shoot downwards
+                /*for(int j = 0; j < 100; j++){
+                    //int x1 = int(x + i *stepY + 0.5);
+                    //int newY = int(y+ i *stepX + 0.5);
+                    SDL_RenderDrawPointF(renderer, x, y+j);
+                }*/
             }
         }
     }
+
     
 }
 
-void ConnectLinesSquare(std::vector<std::vector<double>> points){
-    DrawLine(points[0][0], points[0][1], points[1][0], points[1][1]);
-    DrawLine(points[0][0], points[0][1], points[2][0], points[2][1]);
-    DrawLine(points[0][0], points[0][1], points[4][0], points[4][1]);
-
-    DrawLine(points[1][0], points[1][1], points[5][0], points[5][1]);
-    DrawLine(points[1][0], points[1][1], points[3][0], points[3][1]);
-
-    DrawLine(points[2][0], points[2][1], points[3][0], points[3][1]);
-    DrawLine(points[2][0], points[2][1], points[6][0], points[6][1]);
-
-    DrawLine(points[3][0], points[3][1], points[7][0], points[7][1]);
-
-    DrawLine(points[4][0], points[4][1], points[6][0], points[6][1]);
-    DrawLine(points[4][0], points[4][1], points[5][0], points[5][1]);
-
-    DrawLine(points[5][0], points[5][1], points[7][0], points[7][1]);
-
-    DrawLine(points[6][0], points[6][1], points[7][0], points[7][1]);
-
-}
 
 std::vector<std::vector<double>> CacheWorldSpaceMatricies(S_Shape shape){
     std::vector<std::vector<double>> rotationMatrix = M_GetXAxisRotationMatrix(shape);
@@ -110,14 +150,16 @@ std::vector<std::vector<double>> CacheCameraMatricies(C_Camera camera){
 
 std::vector<double> Transform(S_Shape currentShape, std::vector<double> points){
     std::vector<double> finishedPoints = points;
-    //std::cout<<"Pre: "<<"x:, "<<finishedPoints[0]<<", y: "<<finishedPoints[1]<<", z: "<<finishedPoints[2]<<std::endl;
     
-    finishedPoints[3]=finishedPoints[2];
-    //std::cout<<"w: "<<finishedPoints[3]<<std::endl;
     finishedPoints = M_MultiplyMatricies(finishedPoints, M_GetFOVMatrix(*currentCamera));
-    for(int i = 0; i < 4; i++) finishedPoints[i]/=finishedPoints[3];
+    if(finishedPoints[3]>0.00001){
+        for(int i = 0; i < 4; i++) {
+            finishedPoints[i]/=finishedPoints[3];
+            
+        }
+    }
     finishedPoints = M_MultiplyMatricies(finishedPoints, M_GetViewPortMatrix(screenWidth, screenHeight));
-    //std::cout<<"w: "<<finishedPoints[3]<<std::endl;
+    //std::cout<<"z: "<<finishedPoints[2]<<std::endl;
 
     //std::cout<<"Post: "<<"x:, "<<finishedPoints[0]<<", y: "<<finishedPoints[1]<<", z: "<<finishedPoints[2]<<std::endl<<std::endl;
     return finishedPoints;
@@ -146,6 +188,7 @@ void R_RunDisplay(){
 
             SDL_RenderDrawPoint(renderer, displayPoints[0],displayPoints[1]);
             points[j] = displayPoints;
+            
             
         }
         std::vector<std::vector<double>> faces = currentShape.GetFaces();

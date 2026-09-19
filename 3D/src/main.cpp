@@ -35,7 +35,7 @@ int main(){
         time = clock() - time;
         deltaTime = double(time)/CLOCKS_PER_SEC;
         fps = 1/deltaTime;
-        //std::cout<<fps<<std::endl;
+        //std::cout<<"fps: "<<fps<<std::endl;
     }
 
 

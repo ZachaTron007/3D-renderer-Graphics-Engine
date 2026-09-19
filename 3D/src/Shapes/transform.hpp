@@ -28,6 +28,7 @@ class T_Transform{
         void SetX(double x);
         void SetY(double x);
         void SetZ(double z);
+        void SetPoint(std::vector<double> point);
 
         double GetXAngle();
         double GetYAngle();
@@ -35,6 +36,7 @@ class T_Transform{
         void SetXAngle(double xAngle);
         void SetYAngle(double yAngle);
         void SetZAngle(double zAngle);
+        
 
         double GetWidth();
         double GetHeight();

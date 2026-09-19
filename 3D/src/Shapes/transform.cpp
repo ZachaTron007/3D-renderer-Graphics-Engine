@@ -23,6 +23,11 @@ double T_Transform::GetZ(){ return z; }
 void T_Transform::SetX(double x){ this->x = x; }
 void T_Transform::SetY(double y){ this->y = y; }
 void T_Transform::SetZ(double z){ this->z = z; }
+void T_Transform::SetPoint(std::vector<double> point) {
+    x = point[0];
+    y = point[1];
+    z = point[2];
+}
 
 double T_Transform::GetXAngle(){ return xAngle; }
 double T_Transform::GetYAngle(){ return yAngle; }
